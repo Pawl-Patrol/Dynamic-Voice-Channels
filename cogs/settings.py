@@ -54,7 +54,7 @@ class Settings(Cog):
         """
         await update_config(ctx, 'category', category.id)
         await ctx.send(embed=Embed(
-            description=f'New voice channels are now created in `#{category.name}`.',
+            description=f'New voice channels are now created in `{category.name}`.',
             color=Color.green()
         ))
 
