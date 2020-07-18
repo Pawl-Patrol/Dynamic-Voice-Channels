@@ -93,14 +93,13 @@ class VoiceCreator(Bot):
         else:
             if isinstance(error, errors.CommandInvokeError):
                 error = error.original
-                if isinstance(error, HTTPException):
-                    if isinstance(error, Forbidden):
-                        with suppress(HTTPException):
-                            await ctx.send(embed=Embed(
-                                description=':x: I do not have permission to execute this command',
-                                color=Color.red()
-                            ))
-                        return
+                if isinstance(error, Forbidden):
+                    with suppress(HTTPException):
+                        await ctx.send(embed=Embed(
+                            description=':x: I do not have permission to execute this command',
+                            color=Color.red()
+                        ))
+                    return
             print(f'In {ctx.command.qualified_name}:', file=stderr)
             print_tb(error.__traceback__)
             print(f'{error.__class__.__name__}: {error}', file=stderr)
