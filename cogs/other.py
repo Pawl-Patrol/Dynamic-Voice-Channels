@@ -1,11 +1,11 @@
 from datetime import datetime
-from difflib import get_close_matches
 from typing import Optional
 
 from discord import Embed, Color, Permissions
-from discord.ext.commands import Cog, BucketType, command as _command, max_concurrency
+from discord.ext.commands import Cog, BucketType, command as _command, max_concurrency, bot_has_permissions, cooldown
 from discord.ext.menus import ListPageSource, MenuPages
 from discord.utils import oauth_url
+from .utils.converters import CommandConverter, StrRange
 from psutil import Process, virtual_memory, cpu_count
 
 
@@ -28,31 +28,43 @@ class HelpSource(ListPageSource):
 class Help(Cog):
     @_command(aliases=['h', 'commands', 'cmds'])
     @max_concurrency(1, BucketType.user)
-    async def help(self, ctx, *, command: Optional[str]):
-        """Shows you all of the bot's commands or help for a single command."""
+    @cooldown(3, 10, BucketType.member)
+    @bot_has_permissions(send_messages=True, embed_links=True, add_reactions=True)
+    async def help(self, ctx, *, command: CommandConverter = None):
+        """Shows you all of the bot's commands  or help for a single command."""
         if command:
-            cmd_name = get_close_matches(command.lower(), ctx.bot.all_commands, n=1)
-            if cmd_name:
-                cmd = ctx.bot.all_commands[cmd_name[0]]
-                usage = ctx.prefix + cmd.name
-                if cmd.signature:
-                    usage += ' ' + cmd.signature
-                await ctx.send(embed=Embed(
-                    title=' / '.join([cmd.name, *cmd.aliases]),
-                    description=f'{cmd.help}\n```md\n{usage}```',
-                    color=0x000000
-                ))
-            else:
-                await ctx.send(embed=Embed(
-                    description=f':x: No command named `{command}` found.',
-                    color=Color.red()
-                ))
+            usage = ctx.prefix + command.name
+            if command.signature:
+                usage += ' ' + command.signature
+            await ctx.send(embed=Embed(
+                title=' / '.join([command.name, *command.aliases]),
+                description=f'{command.help}\n```md\n{usage}```',
+                color=0x000000
+            ))
         else:
             source = HelpSource(list(ctx.bot.commands), per_page=5)
             menu = MenuPages(source, clear_reactions_after=True)
             await menu.start(ctx)
 
+    @_command(aliases=["suggest"])
+    @cooldown(1, 120, BucketType.member)
+    @bot_has_permissions(send_messages=True, embed_links=True)
+    async def support(self, ctx, *, message: StrRange(0, 2000)):
+        """Sends a message to the bot's owner. Do not abuse."""
+        owner = ctx.bot.get_user(ctx.bot.owner_id)
+        embed = Embed(
+            description=message
+        )
+        embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+        await owner.send(embed=embed)
+        await ctx.send(embed=Embed(
+            description=":white_check_mark: Message has been sent. Thank you for your help!",
+            color=Color.green()
+        ))
+
     @_command(aliases=['join'])
+    @cooldown(1, 30, BucketType.channel)
+    @bot_has_permissions(send_messages=True, embed_links=True)
     async def invite(self, ctx):
         """Gives you the bot's Invite Link. If you don't want the bot to create its own role or you want to set the
         permissions yourself, use the Invite without permissions. But don't forget that it won't work without these
@@ -74,6 +86,8 @@ class Help(Cog):
         ))
 
     @_command(aliases=['about', 'stats'])
+    @cooldown(1, 30, BucketType.channel)
+    @bot_has_permissions(send_messages=True, embed_links=True)
     async def info(self, ctx):
         """Shows you information about the bot owner, bot uptime, latency, memory and cpu usage."""
         embed = Embed(color=0x000000)
