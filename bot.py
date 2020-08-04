@@ -1,85 +1,54 @@
-from contextlib import suppress
-from datetime import datetime
-from itertools import cycle
-from logging import FileHandler, Formatter, INFO, getLogger
-from random import choice
-
-from aiohttp import ClientSession
-from discord import Object, PermissionOverwrite, HTTPException, Embed, Color, Activity, ActivityType
-from discord.ext.commands import Bot, CooldownMapping, BucketType, when_mentioned_or, errors
-from discord.ext.tasks import loop
-
+import discord
+from discord.ext import commands
 import config
-from cogs.utils.checks import NotChannelOwner, NotInVoiceChannel, ChannelNotEditable
-from cogs.utils.converters import CannotFindCommand, IntNotInRange, StrNotInRange
-from cogs.utils.jsonfile import JSONFile
+from cogs.help import HelpCommand
+from utils.jsonfile import JSONList, JSONDict
+from utils.context import Context
+from collections import Counter
+import datetime
+from contextlib import suppress
+import traceback
 
 
-def prefix_callable(bot, msg):
-    try:
-        prefix = bot.configs[msg.guild.id]['prefix']
-    except KeyError:
-        prefix = bot.default_prefix
-    return when_mentioned_or(prefix)(bot, msg)
+extensions = (
+    "cogs.settings",
+    "cogs.core",
+    "cogs.voice",
+    "cogs.api",
+)
 
 
-class VoiceCreator(Bot):
+class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=prefix_callable,
-            help_command=None,
+            command_prefix=lambda b, m: b.prefixes.get(str(m.guild.id), 'dvc!'),
+            help_command=HelpCommand(),
             case_insensitive=True,
-            owner_id=config.owner_id
+            owner_id=config.owner_id,
+            activity=discord.Activity(type=discord.ActivityType.watching, name='dvc!')
         )
-        self.default_prefix = config.default_prefix
         self.launched_at = None
-        self.logger = getLogger()
-        self.init_logger()
         self.client_id = config.client_id
-        self.activities = cycle(["dvc!help", "dvc!invite", "{guilds} guilds", "{channels} channels", "{users} users"])
-        self.session = ClientSession(loop=self.loop)
-        self.configs = JSONFile('data/configs.json')
-        self.channels = JSONFile('data/channels.json')
-        self.rate_limiter = CooldownMapping.from_cooldown(3, 5, BucketType.user)
-        self.load_extension("cogs.settings")
-        self.load_extension("cogs.voice")
-        self.load_extension("cogs.other")
 
-    def init_logger(self):
-        handler = FileHandler('logs.log')
-        formatter = Formatter('[%(asctime)s] %(message)s', datefmt='%H:%M:%S')
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)
+        self.prefixes = JSONDict('prefixes.json')  # Mapping[guild_id, prefix]
+        self.bad_words = JSONDict('bad_words.json')  # Mapping[guild_id, List[user_id]]
+        self.configs = JSONDict('configs.json')  # Mapping[channel_id, config]
+        self.channels = JSONList('channels.json')  # List[channel_id]
+        self.blacklist = JSONList('blacklist.json')  # List[user_id]
+
+        self.voice_spam_control = commands.CooldownMapping.from_cooldown(3, 5, commands.BucketType.user)
+        self.voice_spam_counter = Counter()
+
+        self.text_spam_control = commands.CooldownMapping.from_cooldown(8, 10, commands.BucketType.user)
+        self.text_spam_counter = Counter()
+
+        for extension in extensions:
+            self.load_extension(extension)
 
     async def on_ready(self):
         if self.launched_at is None:
-            self.launched_at = datetime.utcnow()
-            self.update_presence.start()
-            self.update_stats.start()
-            print('Logged in!')
-
-    @loop(seconds=15)
-    async def update_presence(self):
-        activity = next(self.activities).format(
-            guilds=len(self.guilds),
-            channels=len(self.channels),
-            users=len(self.users)
-        )
-        await self.change_presence(activity=Activity(type=ActivityType.watching, name=activity))
-
-    @loop(minutes=30)
-    async def update_stats(self):
-        headers = {'Authorization': 'Bot ' + config.discord_bot_list_key}
-        data = {
-            'guilds': len(self.guilds),
-            'users': len(self.users)
-        }
-        url = 'https://discordbotlist.com/api/v1/bots/' + str(self.user.id) + '/stats'
-        await self.session.post(url=url, json=data, headers=headers)
-        self.logger.info("Updated discordbotlist.com stats")
-
-    async def on_guild_join(self, guild):
-        self.logger.warning(f'Joined guild "{guild.name}" with {guild.member_count} users (ID: {guild.id})')
+            self.launched_at = datetime.datetime.utcnow()
+            print('Logged in as', self.user)
 
     async def on_message(self, message):
         if message.guild is None:
@@ -90,55 +59,27 @@ class VoiceCreator(Bot):
         if before.content != after.content:
             await self.on_message(after)
 
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, errors.CommandNotFound):
+    async def process_commands(self, message):
+        ctx = await self.get_context(message, cls=Context)
+        if ctx.command is None:
             return
-        elif isinstance(error, errors.UserInputError):
-            if isinstance(error, CannotFindCommand):
-                msg = f'No command called **{error.argument}** found.'
-                if error.close is not None:
-                    msg += f' Did you mean **{error.close.title()}**?'
-            elif isinstance(error, IntNotInRange):
-                msg = f'The given number must be in the range from {error.minimum} to {error.maximum}.'
-            elif isinstance(error, StrNotInRange):
-                msg = f'The given argument must be longer than {error.minimum} and less than {error.maximum} characters.'
-            else:
-                msg = str(error)
-        elif isinstance(error, errors.CheckFailure):
-            if isinstance(error, NotInVoiceChannel):
-                msg = ':x: You have to be in a voice channel to use this command.'
-            elif isinstance(error, ChannelNotEditable):
-                msg = ':x: You cannot use this command in this channel.'
-            elif isinstance(error, NotChannelOwner):
-                msg = f'You have to be the owner of the voice channel to use this command. (<@{error.owner_id}>)'
-            elif isinstance(error, errors.NoPrivateMessage):
-                msg = 'You cannot use this command in private messages.'
-            elif isinstance(error, errors.MissingPermissions):
-                perms = ', '.join(f'`{perm}`' for perm in error.missing_perms)
-                msg = f'You need the {perms} permission(s) to use this command.'
-            elif isinstance(error, errors.BotMissingPermissions):
-                perms = ', '.join(f'`{perm}`' for perm in error.missing_perms)
-                msg = f'The bot needs the {perms} permission(s) to execute this command.'
-            else:
-                return
-        elif isinstance(error, errors.DisabledCommand):
-            msg = 'This command is currently disabled.'
-        elif isinstance(error, errors.CommandOnCooldown):
-            msg = f'You are being rate limited. Try again in `{error.retry_after:.2f}` seconds.'
-        elif isinstance(error, errors.MaxConcurrencyReached):
-            msg = 'Another instance of this command is already running.'
+        if ctx.author.id in self.blacklist:
+            return
+        if not ctx.channel.permissions_for(ctx.guild.me).send_messages:
+            return
+        bucket = self.text_spam_control.get_bucket(message)
+        current = message.created_at.replace(tzinfo=datetime.timezone.utc).timestamp()
+        retry_after = bucket.update_rate_limit(current)
+        if retry_after:
+            self.text_spam_counter[ctx.author.id] += 1
+            if self.text_spam_counter[ctx.author.id] >= 5:
+                del self.text_spam_counter[ctx.author.id]
+                self.blacklist.append(ctx.author.id)
+                await self.blacklist.save()
+            await ctx.send(f'You are being rate limited. Try again in `{retry_after:.2f}` seconds.')
         else:
-            msg = 'An uncaught error occurred! My programmer has been informed and will fix the error.'
-            self.logger.error('Uncaught exception', exc_info=(error.__class__.__name__, error, error.__traceback__))
-        perms = ctx.channel.permissions_for(ctx.guild.me)
-        if perms.send_messages:
-            if perms.embed_links:
-                await ctx.send(embed=Embed(
-                    description=msg.capitalize(),
-                    color=Color.red()
-                ))
-            else:
-                await ctx.send(msg)
+            self.text_spam_counter.pop(message.author.id, None)
+            await self.invoke(ctx)
 
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel:
@@ -148,54 +89,96 @@ class VoiceCreator(Bot):
                 await self.on_voice_join(member, after.channel)
 
     async def on_voice_join(self, member, channel):
-        cfg = self.configs.get(member.guild.id, {})
-        if channel.id == cfg.get('channel', 0):
-            fake_message = Object(id=0)
-            fake_message.author = member
-            bucket = self.rate_limiter.get_bucket(fake_message)
-            retry_after = bucket.update_rate_limit()
-            if retry_after:
-                with suppress(HTTPException):
-                    await member.send(f'You are being rate limited. Try again in `{retry_after:.2f}` seconds.')
-            else:
-                name = cfg.get('name', "@user's channel").replace('@user', member.display_name)
-                limit = cfg.get('limit', 10)
-                category = member.guild.get_channel(cfg.get('category', 0))
-                if category is None:
-                    category = channel.category
-                overwrites = channel.overwrites.copy()
-                overwrites[member] = PermissionOverwrite(manage_channels=True)
-                try:
-                    new_channel = await member.guild.create_voice_channel(
-                        name=name,
-                        overwrites=overwrites,
-                        category=category,
-                        user_limit=limit,
-                    )
-                except HTTPException:
-                    return
+        if member.id in self.blacklist:
+            return
+        if not str(channel.id) in self.configs:
+            return
+        perms = member.guild.me.guild_permissions
+        if not perms.manage_channels or not perms.move_members:
+            return
+        fake_message = discord.Object(id=0)
+        fake_message.author = member
+        bucket = self.voice_spam_control.get_bucket(fake_message)
+        retry_after = bucket.update_rate_limit()
+        if retry_after:
+            self.voice_spam_counter[member.id] += 1
+            if self.voice_spam_counter[member.id] >= 5:
+                del self.text_spam_counter[member.id]
+                self.blacklist.append(member.id)
+                await self.blacklist.save()
+            with suppress(discord.Forbidden):
+                await member.send(f'You are being rate limited. Try again in `{retry_after:.2f}` seconds.')
+        else:
+            settings = self.configs[str(channel.id)]
+            name = settings.get('name', '@user\'s channel')
+            limit = settings.get('limit', 10)
+            top = settings.get('top', False)
+            category = member.guild.get_channel(settings.get('category', channel.category.id))
+            if '@user' in name:
+                name = name.replace('@user', member.display_name)
+            if '@game' in name:
+                for activity in member.activities:
+                    if activity.type == discord.ActivityType.playing and activity.name is not None:
+                        name = name.replace('@game', activity.name)
+                        break
                 else:
-                    self.channels[new_channel.id] = member.id
-                    await self.channels.save()
-                    if cfg.get('top', False):
-                        self.loop.create_task(new_channel.edit(position=0))
-                        self.loop.create_task(member.move_to(new_channel))
-                    else:
-                        with suppress(HTTPException):
-                            await member.move_to(new_channel)
+                    name = name.replace('@game', 'no game')
+            if '@position' in name:
+                channels = [c for c in category.voice_channels if c.id in self.channels]
+                name = name.replace('@position', str(len(channels)+1))
+            if len(name) > 100:
+                name = name[:97] + '...'
+            words = self.bad_words.get(str(member.guild.id), [])
+            for word in words:
+                if word in name:
+                    name = name.replace(word, '*'*len(word))
+            overwrites = {member: discord.PermissionOverwrite(manage_channels=True)}
+            new_channel = await member.guild.create_voice_channel(
+                overwrites=overwrites,
+                name=name,
+                category=category,
+                user_limit=limit
+            )
+            if top:
+                self.loop.create_task(new_channel.edit(position=0))
+            await member.move_to(new_channel)
+            self.channels.append(new_channel.id)
+            await self.channels.save()
+
+    async def on_guild_channel_delete(self, channel):
+        if str(channel.id) in self.configs:
+            try:
+                self.configs.pop(str(channel.id))
+            except KeyError:
+                return
+            await self.configs.save()
 
     async def on_voice_leave(self, member, channel):
         if channel.id in self.channels:
             if len(channel.members) == 0:
-                with suppress(HTTPException):
+                perms = channel.permissions_for(member.guild.me)
+                if perms.manage_channels:
                     await channel.delete()
-                del self.channels[channel.id]
+                self.channels.remove(channel.id)
                 await self.channels.save()
-            elif member.id == self.channels[channel.id]:
-                new_owner = choice(channel.members)
-                self.channels[channel.id] = new_owner.id
-                await self.channels.save()
+
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandNotFound):
+            return
+        elif isinstance(error, commands.CommandInvokeError):
+            error = error.original
+            traceback.print_exception(error.__class__.__name__, error, error.__traceback__)
+            owner = self.get_user(self.owner_id)
+            if owner is not None:
+                tb = '\n'.join(traceback.format_exception(error.__class__.__name__, error, error.__traceback__))
+                with suppress(discord.HTTPException):
+                    await owner.send(embed=discord.Embed(
+                        description=f'```py\n{tb}```',
+                        color=discord.Color.red()
+                    ))
+        else:
+            await ctx.safe_send(msg=str(error), color=discord.Color.red())
 
 
 if __name__ == "__main__":
-    VoiceCreator().run(config.token)
+    Bot().run(config.token)
