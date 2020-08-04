@@ -2,61 +2,68 @@
 
 ## Introduction
 
-Have you always wanted a fast discord bot that automatically creates new voice channels and is also easy to use?  Then this bot is perfect for you. It automatically creates a new voice channel as soon as you join a specified channel and deletes it afterwards.
+Have you always wanted a fast discord bot that automatically creates new voice channels and is also easy to use?  Then this bot is perfect for you. It automatically creates a new voice channel as soon as you join a certain channel and deletes it afterwards.
 
 ## Examples
 
-- **Setup the bot:**
-
-![Example](https://i.imgur.com/cMwN3jf.gif)
-
-- **Dynamically create channels:**
+- **Dynamic channels:**
 
 ![Example](https://i.imgur.com/40zpISm.gif)
 
+- **Easy settings:**
+
+![Example](https://i.imgur.com/R05aMGl.gif)
+
 ## Setup
 
-You can change the prefix using `dvc!prefix <new prefix>`
+You can change the prefix using **`dvc!prefix <new prefix>`**
 
-##### Setting the channel:
+**1. Setting the channel:**
 
-Use **`dvc!channel <id or name>`** to set the initial channel.
+You can either use **`dvc!setup`** to setup a new category and a new channel or **`dvc!add <channel>`** to add the initial channel. The channel can be removed later with **`dvc!remove <channel>`**. You can see all set auto-channels using **`dvc!list`**.
 
-##### Setting the category (optional):
+**2. Editing the default settings:**
 
-If you want to, you can specify a category in which new channels should be created in. By default this is the category of the initial channel.
+You can change settings using **`dvc!setup`**. The bot will start an interactive session where you can change the name, limit, position and category of new channels.
 
-##### Setting the default name for channels (optional):
+**3. Blacklist bad words:**
 
-With **`dvc!defaultname <name> `** you can set a default name for new voice channels. You can also use "@user" to refer to the user who created the channel. E.g. **`dvc!defaultname @user's channel`**
+To blacklist certain words in channel names you can use the **`dvc!blacklist <word>`** command. Bad words are replaced with asterisks. To remove the word use **`dvc!whitelist <word>`**.
 
-##### Setting the default limit for channels (optional):
+## Commands:
 
-As with the name, you can also set the default limit using **`dvc!defaultlimit <limit>`**
+When creating a new channel you will get the **`manage channel`** permission in this channel. Every user with this permission can use commands to modify the channel.
 
-##### Setting the position (optional):
+### Managing:
 
-Use **`dvc!position`** to change the position of the created voice channels. Channels can either be created below or above the initial channel.
- 
-## Modifying the voice channel
+- **`dvc!name <new name>`** Sets a name
+- **`dvc!limit <new limit>`** Sets a limit
+- **`dvc!kick <member>`** Kicks someone
 
-The bot allows users to easily edit their channels with commands.
+### Permissions:
 
-### The owner principle
+- **`dvc!permit <member>`** Gives someone `manage channel` permission.
+- **`dvc!transfer <member>`** Transfers your permission
+- **`dvc!claim`** Claims permission after the owner has left the channel
 
-The person who created the channel is considered the "owner" of that channel. The owner has access to many commands to change his channel. After the owner leaves the channel users can claim the ownership by using **`dvc!claim`**. The ownership can also be transfered with **`dvc!transfer <member>`** by the owner.
+### Connecting:
 
-### Commands:
+- **`dvc!close [member|role]`** Denies connecting
+- **`dvc!open [member|role]`** Removes connection overwrites
+- **`dvc!grant [member|role]`** Allows connecting 
 
-- `dvc!name <new name>`
-- `dvc!limit <new limit>`
-- `dvc!lock`
-- `dvc!unlock`
-- `dvc!hide`
-- `dvc!unhide`
-- `dvc!kick <member>`
-- `dvc!ban <member>`
-- `dvc!unban <member>`
+### Visibility:
+
+- **`dvc!hide [member|role]`** Makes your channel hidden
+- **`dvc!unhide [member|role]`** Makes your channel no longer hidden
+- **`dvc!show [member|role]`** Makes your channel visible
+
+### Other:
+
+- **`dvc!help [command]`** Help!
+- **`dvc!invite`** Get the invite
+- **`dvc!info`** Bot info
+
 
 ## Links
 
