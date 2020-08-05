@@ -19,7 +19,8 @@ class Core(commands.Cog):
             add_reactions=True,
             move_members=True,
             manage_channels=True,
-            manage_messages=True
+            manage_messages=True,
+            manage_permissions=True
         ))
         if ctx.bot_perms.embed_links:
             no_perms = discord.utils.oauth_url(ctx.bot.client_id, discord.Permissions.none())
@@ -55,10 +56,6 @@ class Core(commands.Cog):
         embed.add_field(name='CPU usage', value=f'{round(cpu_usage)}%')
         embed.add_field(name='Memory usage', value=f'{int(mem_usage)} / {int(mem_total)} MiB ({round(mem_of_total)}%)')
         await ctx.send(embed=embed)
-
-    @commands.command()
-    async def say(self, ctx):
-        await ctx.send('.'+'\n'*30+'‎')
 
 
 def setup(bot):

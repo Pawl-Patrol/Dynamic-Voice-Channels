@@ -181,7 +181,10 @@ class EditMenu(menus.Menu):
                       'This can either be above or below the auto-channel.',
                 inline=False
             )
-            category = self.ctx.guild.get_channel(settings.get('category', self.channel.category.id))
+            try:
+                category = self.ctx.guild.get_channel(settings['category'])
+            except KeyError:
+                category = self.channel.category
             if category is None:
                 category = 'No category'
             else:
@@ -277,7 +280,10 @@ class Settings(commands.Cog):
                 name = settings.get('name', '@user\'s channel')
                 limit = settings.get('limit', 10)
                 position = 'top' if settings.get('top', False) else 'bottom'
-                category = ctx.guild.get_channel(settings.get('category', channel.category.id))
+                try:
+                    category = ctx.guild.get_channel(settings['category'])
+                except KeyError:
+                    category = channel.category
                 if category is None:
                     category = 'No category'
                 else:
