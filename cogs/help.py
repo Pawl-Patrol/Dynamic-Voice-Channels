@@ -24,7 +24,7 @@ class HelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(command_attrs={
             'aliases': ['h', 'commands'],
-            'max_concurrency': commands.MaxConcurrency(1, per=commands.BucketType.member, wait=False),
+            'max_concurrency': commands.MaxConcurrency(2, per=commands.BucketType.member, wait=False),
             'help': 'Starts an interactive session with a list of all available commands.'
         }, verify_checks=False)
 
