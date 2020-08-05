@@ -18,7 +18,7 @@ class JSON:
             return default
 
     def _dump(self):
-        temp = f'{uuid.uuid4()}-{self.path}.tmp'
+        temp = f'{self.path}-{uuid.uuid4()}.tmp'
         with open(temp, 'w', encoding='utf-8') as tmp:
             json.dump(self.copy(), tmp, ensure_ascii=True, separators=(',', ':'))
         os.replace(temp, self.path)
