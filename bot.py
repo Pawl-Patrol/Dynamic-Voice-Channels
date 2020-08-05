@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, menus
 import config
 from cogs.help import HelpCommand
 from utils.jsonfile import JSONList, JSONDict
@@ -30,11 +30,11 @@ class Bot(commands.Bot):
         self.launched_at = None
         self.client_id = config.client_id
 
-        self.prefixes = JSONDict('prefixes.json')  # Mapping[guild_id, prefix]
-        self.bad_words = JSONDict('bad_words.json')  # Mapping[guild_id, List[user_id]]
-        self.configs = JSONDict('configs.json')  # Mapping[channel_id, config]
-        self.channels = JSONList('channels.json')  # List[channel_id]
-        self.blacklist = JSONList('blacklist.json')  # List[user_id]
+        self.prefixes = JSONDict('data/prefixes.json')  # Mapping[guild_id, prefix]
+        self.bad_words = JSONDict('data/bad_words.json')  # Mapping[guild_id, List[user_id]]
+        self.configs = JSONDict('data/configs.json')  # Mapping[channel_id, config]
+        self.channels = JSONList('data/channels.json')  # List[channel_id]
+        self.blacklist = JSONList('data/blacklist.json')  # List[user_id]
 
         self.voice_spam_control = commands.CooldownMapping.from_cooldown(3, 5, commands.BucketType.user)
         self.voice_spam_counter = Counter()
@@ -113,7 +113,10 @@ class Bot(commands.Bot):
             name = settings.get('name', '@user\'s channel')
             limit = settings.get('limit', 10)
             top = settings.get('top', False)
-            category = member.guild.get_channel(settings.get('category', channel.category.id))
+            try:
+                category = member.guild.get_channel(settings['category'])
+            except KeyError:
+                category = channel.category
             if '@user' in name:
                 name = name.replace('@user', member.display_name)
             if '@game' in name:
@@ -132,7 +135,20 @@ class Bot(commands.Bot):
             for word in words:
                 if word in name:
                     name = name.replace(word, '*'*len(word))
-            overwrites = {member: discord.PermissionOverwrite(manage_channels=True)}
+            overwrites = {
+                member.guild.me: discord.PermissionOverwrite(
+                    view_channel=True,
+                    connect=True,
+                    manage_channels=True,
+                    move_members=True,
+                    manage_permissions=True
+                ),
+                member: discord.PermissionOverwrite(
+                    manage_channels=True,
+                    move_members=True,
+                    manage_permissions=True
+                )
+            }
             new_channel = await member.guild.create_voice_channel(
                 overwrites=overwrites,
                 name=name,
@@ -165,7 +181,7 @@ class Bot(commands.Bot):
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             return
-        elif isinstance(error, commands.CommandInvokeError):
+        elif isinstance(error, commands.CommandInvokeError) and not isinstance(error.original, menus.MenuError):
             error = error.original
             traceback.print_exception(error.__class__.__name__, error, error.__traceback__)
             owner = self.get_user(self.owner_id)
