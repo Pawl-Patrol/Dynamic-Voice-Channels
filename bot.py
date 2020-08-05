@@ -31,7 +31,7 @@ class Bot(commands.Bot):
         self.client_id = config.client_id
 
         self.prefixes = JSONDict('data/prefixes.json')  # Mapping[guild_id, prefix]
-        self.bad_words = JSONDict('data/bad_words.json')  # Mapping[guild_id, List[user_id]]
+        self.bad_words = JSONDict('data/bad_words.json')  # Mapping[guild_id, List[str]]
         self.configs = JSONDict('data/configs.json')  # Mapping[channel_id, config]
         self.channels = JSONList('data/channels.json')  # List[channel_id]
         self.blacklist = JSONList('data/blacklist.json')  # List[user_id]
