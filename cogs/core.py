@@ -6,7 +6,6 @@ import datetime
 
 class Core(commands.Cog):
     @commands.command(aliases=['join'])
-    @commands.bot_has_permissions(send_messages=True, embed_links=True)
     async def invite(self, ctx):
         """Gives you the bot's Invite Link.
         If you don't want the bot to create its own role or you want to set the permissions yourself,
@@ -20,9 +19,10 @@ class Core(commands.Cog):
             move_members=True,
             manage_channels=True,
             manage_messages=True,
-            manage_permissions=True
+            manage_roles=True
         ))
-        if ctx.bot_perms.embed_links:
+        perms = ctx.channel.permissions_for(ctx.guild.me)
+        if perms.embed_links:
             no_perms = discord.utils.oauth_url(ctx.bot.client_id, discord.Permissions.none())
             await ctx.send(embed=discord.Embed(
                 title=':envelope: Invite links',
@@ -34,7 +34,7 @@ class Core(commands.Cog):
 
     @commands.command(aliases=['about', 'stats'])
     @commands.cooldown(1, 30, commands.BucketType.user)
-    @commands.bot_has_permissions(send_messages=True, embed_links=True)
+    @commands.bot_has_permissions(embed_links=True)
     async def info(self, ctx):
         """Shows you information about the bot."""
         embed = discord.Embed(color=ctx.guild.me.color)

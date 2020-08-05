@@ -42,8 +42,8 @@ class Voice(commands.Cog):
         )
 
     @commands.command(usage='[member|role]')
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def close(self, ctx, *, target: typing.Union[discord.Member, discord.Role] = None):
         """
@@ -72,8 +72,8 @@ class Voice(commands.Cog):
         )
 
     @commands.command(usage='[member|role]')
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def open(self, ctx, *, target: typing.Union[discord.Member, discord.Role] = None):
         """
@@ -98,8 +98,8 @@ class Voice(commands.Cog):
         )
 
     @commands.command(usage='[member|role]')
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def grant(self, ctx, *, target: typing.Union[discord.Member, discord.Role] = None):
         """
@@ -125,8 +125,8 @@ class Voice(commands.Cog):
         )
 
     @commands.command(usage='[member|role]')
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def hide(self, ctx, *, target: typing.Union[discord.Member, discord.Role] = None):
         """
@@ -151,8 +151,8 @@ class Voice(commands.Cog):
         )
 
     @commands.command(usage='[member|role]')
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def unhide(self, ctx, *, target: typing.Union[discord.Member, discord.Role] = None):
         """
@@ -177,8 +177,8 @@ class Voice(commands.Cog):
         )
 
     @commands.command(usage='[member|role]')
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def show(self, ctx, *, target: typing.Union[discord.Member, discord.Role] = None):
         """
@@ -220,23 +220,23 @@ class Voice(commands.Cog):
             )
 
     @commands.command()
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def permit(self, ctx, *, member: discord.Member):
         """Gives a certain member the `manage channel` permission.
         The member is then the co-owner of your channel.
         This cannot be undone since the original owner is not saved.
         """
-        await ctx.set_voice_permissions(member, manage_channels=True, move_members=True, manage_permissions=True)
+        await ctx.set_voice_permissions(member, manage_channels=True, move_members=True, manage_roles=True)
         await ctx.safe_send(
             msg=f'Gave {member.mention} permissions.',
             color=discord.Color.green()
         )
 
     @commands.command()
-    @bot_has_voice_permissions(manage_permissions=True)
-    @has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
+    @has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def transfer(self, ctx, *, member: discord.Member):
         """Transfers your ownership to another member.
@@ -245,11 +245,11 @@ class Voice(commands.Cog):
         """
         overwrites = ctx.author.voice.channel.overwrites.copy()
         overwrite = overwrites.pop(ctx.author, discord.PermissionOverwrite())
-        overwrite.update(manage_channels=None, move_members=None, manage_permissions=None)
+        overwrite.update(manage_channels=None, move_members=None, manage_roles=None)
         if not overwrite.is_empty():
             overwrites[ctx.author] = overwrite
         overwrite = overwrites.pop(member, discord.PermissionOverwrite())
-        overwrite.update(manage_channels=True, move_members=True, manage_permissions=True)
+        overwrite.update(manage_channels=True, move_members=True, manage_roles=True)
         overwrites[member] = overwrite
         await ctx.author.voice.channel.edit(overwrites=overwrites)
         await ctx.safe_send(
@@ -258,7 +258,7 @@ class Voice(commands.Cog):
         )
 
     @commands.command()
-    @bot_has_voice_permissions(manage_permissions=True)
+    @bot_has_voice_permissions(manage_roles=True)
     @connected_to_voice()
     async def claim(self, ctx):
         """Claim ownership of your channel.

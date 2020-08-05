@@ -205,7 +205,7 @@ class EditMenu(menus.Menu):
 
 class Settings(commands.Cog):
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def setup(self, ctx):
         """Automatically creates a new category and a new channel."""
         category = await ctx.guild.create_category(ctx.bot.user.name)
@@ -218,7 +218,7 @@ class Settings(commands.Cog):
         )
 
     @commands.command(aliases=['channel'])
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def add(self, ctx, *, channel: discord.VoiceChannel):
         """Adds a voice channel to the auto-channels."""
         if str(channel.id) in ctx.bot.configs:
@@ -236,7 +236,7 @@ class Settings(commands.Cog):
                 )
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def remove(self, ctx, *, channel: discord.VoiceChannel):
         """Removes a voice channel from the auto-channels."""
         try:
@@ -250,7 +250,7 @@ class Settings(commands.Cog):
             )
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def edit(self, ctx, *, channel: discord.VoiceChannel):
         """Edits the default settings of an auto-channel."""
         if str(channel.id) not in ctx.bot.configs:
@@ -299,7 +299,7 @@ class Settings(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def prefix(self, ctx, prefix=None):
         """Changes the bot's prefix on the server."""
         if prefix is None:
@@ -320,7 +320,7 @@ class Settings(commands.Cog):
         await ctx.safe_send(msg=msg, color=ctx.guild.me.color)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def blacklist(self, ctx, *, word=None):
         """Puts a word on the blacklist.
         If a word in the blacklist is in the new name of a channel it gets censored.
@@ -348,7 +348,7 @@ class Settings(commands.Cog):
                 )
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @commands.has_permissions(manage_guild=True)
     async def whitelist(self, ctx, *, word):
         """Removes a word from the blacklist."""
         words = ctx.bot.bad_words.get(str(ctx.guild.id), [])
