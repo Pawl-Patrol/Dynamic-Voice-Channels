@@ -24,7 +24,7 @@ You can either use **`dvc!setup`** to setup a new category and a new channel or 
 
 **2. Editing the default settings:**
 
-You can change settings using **`dvc!setup`**. The bot will start an interactive session where you can change the name, limit, position and category of new channels.
+You can change settings using **`dvc!edit <channel>`**. The bot will start an interactive session where you can change the name, limit, position and category of new channels.
 
 **3. Blacklist bad words:**
 
@@ -32,7 +32,7 @@ To blacklist certain words in channel names you can use the **`dvc!blacklist <wo
 
 ## Commands:
 
-When creating a new channel you will get the **`manage channel`** permission in this channel. Every user with this permission can use commands to modify the channel.
+When creating a new channel you will get the **`manage channel`**, **`manage roles`** and **`move members`** permissions in this channel. Every member with these permissions can use commands to modify the channel.
 
 ### Managing:
 
@@ -42,9 +42,9 @@ When creating a new channel you will get the **`manage channel`** permission in 
 
 ### Permissions:
 
-- **`dvc!permit <member>`** Gives someone `manage channel` permission.
-- **`dvc!transfer <member>`** Transfers your permission
-- **`dvc!claim`** Claims permission after the owner has left the channel
+- **`dvc!permit <member>`** Gives someone permissions.
+- **`dvc!transfer <member>`** Transfers your permissions
+- **`dvc!claim`** Claims permissions after the owner has left the channel
 
 ### Connecting:
 
