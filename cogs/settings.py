@@ -206,6 +206,7 @@ class EditMenu(menus.Menu):
 class Settings(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_guild_permissions(manage_channels=True)
     async def setup(self, ctx):
         """Automatically creates a new category and a new channel."""
         category = await ctx.guild.create_category(ctx.bot.user.name)

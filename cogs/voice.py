@@ -5,8 +5,14 @@ from utils.converters import StrRange, IntRange
 import typing
 
 
+class BucketType(commands.BucketType):
+    def get_key(self, msg):
+        return msg.author.voice.channel.id
+
+
 class Voice(commands.Cog):
     @commands.command()
+    @commands.cooldown(2, 600, BucketType.channel)
     @bot_has_voice_permissions(manage_channels=True)
     @has_voice_permissions(manage_channels=True)
     @connected_to_voice()
