@@ -18,7 +18,7 @@ def has_voice_permissions(**perms):
         raise TypeError('Invalid permission(s): %s' % (', '.join(invalid)))
 
     def predicate(ctx):
-        permissions = ctx.author.voice.channel.permissions_for(ctx.guild.me)
+        permissions = ctx.author.voice.channel.permissions_for(ctx.author)
         missing = [perm for perm, value in perms.items() if getattr(permissions, perm) != value]
         if missing:
             raise commands.MissingPermissions(missing)
