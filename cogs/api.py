@@ -8,7 +8,9 @@ import typing
 class Api(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # self.update_stats.start()
+
+    async def on_ready(self):
+        self.update_stats.start()
 
     @tasks.loop(hours=1)
     async def update_stats(self):

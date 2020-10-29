@@ -8,6 +8,7 @@ from collections import Counter
 import datetime
 from contextlib import suppress
 import traceback
+import re
 
 
 extensions = (
@@ -21,6 +22,7 @@ extensions = (
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
+            intents=discord.Intents.all(),
             command_prefix=lambda b, m: b.prefixes.get(str(m.guild.id), 'dvc!'),
             help_command=HelpCommand(),
             case_insensitive=True,
@@ -48,6 +50,9 @@ class Bot(commands.Bot):
     async def on_ready(self):
         if self.launched_at is None:
             self.launched_at = datetime.datetime.utcnow()
+            for guild in self.guilds:
+                for channel in guild.voice_channels:
+                    await self.on_voice_leave(channel)
             print('Logged in as', self.user)
 
     async def on_message(self, message):
@@ -84,7 +89,7 @@ class Bot(commands.Bot):
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel:
             if before.channel is not None:
-                await self.on_voice_leave(member, before.channel)
+                await self.on_voice_leave(before.channel)
             if after.channel is not None:
                 await self.on_voice_join(member, after.channel)
 
@@ -112,6 +117,7 @@ class Bot(commands.Bot):
             settings = self.configs[str(channel.id)]
             name = settings.get('name', '@user\'s channel')
             limit = settings.get('limit', 10)
+            bitrate = settings.get('bitrate', 64000)
             top = settings.get('top', False)
             try:
                 category = member.guild.get_channel(settings['category'])
@@ -129,12 +135,12 @@ class Bot(commands.Bot):
             if '@position' in name:
                 channels = [c for c in category.voice_channels if c.id in self.channels]
                 name = name.replace('@position', str(len(channels)+1))
-            if len(name) > 100:
-                name = name[:97] + '...'
             words = self.bad_words.get(str(member.guild.id), [])
             for word in words:
-                if word in name:
-                    name = name.replace(word, '*'*len(word))
+                if word.casefold() in name.casefold():
+                    name = re.sub(word, '*'*len(word), name, flags=re.IGNORECASE)
+            if len(name) > 100:
+                name = name[:97] + '...'
             overwrites = {
                 member.guild.me: discord.PermissionOverwrite(
                     view_channel=True,
@@ -153,13 +159,25 @@ class Bot(commands.Bot):
                 overwrites=overwrites,
                 name=name,
                 category=category,
-                user_limit=limit
+                user_limit=limit,
+                bitrate=bitrate
             )
             if top:
                 self.loop.create_task(new_channel.edit(position=0))
             await member.move_to(new_channel)
             self.channels.append(new_channel.id)
             await self.channels.save()
+
+    async def on_voice_leave(self, channel):
+        if channel.id in self.channels:
+            if len(channel.members) == 0:
+                ch = channel.guild.get_channel(channel.id)
+                if ch is not None:
+                    perms = channel.permissions_for(channel.guild.me)
+                    if perms.manage_channels:
+                        await channel.delete()
+                self.channels.remove(channel.id)
+                await self.channels.save()
 
     async def on_guild_channel_delete(self, channel):
         if str(channel.id) in self.configs:
@@ -168,15 +186,6 @@ class Bot(commands.Bot):
             except KeyError:
                 return
             await self.configs.save()
-
-    async def on_voice_leave(self, member, channel):
-        if channel.id in self.channels:
-            if len(channel.members) == 0:
-                perms = channel.permissions_for(member.guild.me)
-                if perms.manage_channels:
-                    await channel.delete()
-                self.channels.remove(channel.id)
-                await self.channels.save()
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):

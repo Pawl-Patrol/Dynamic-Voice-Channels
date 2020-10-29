@@ -9,6 +9,7 @@ import inspect
 NAME = config.emojis['name']
 LIMIT = config.emojis['limit']
 POSITION = config.emojis['position']
+BITRATE = config.emojis['bitrate']
 CATEGORY = config.emojis['category']
 HELP = config.emojis['help']
 EXIT = config.emojis['exit']
@@ -99,7 +100,7 @@ class EditMenu(menus.Menu):
                 msg = 'This is not a number. Try again.'
             else:
                 if not 0 <= number <= 99:
-                    msg = 'The limit must be between 0 and 99. Try again'
+                    msg = 'The limit must be between `0` and `99`. Try again'
                 else:
                     await self.set_settings('limit', number)
                     to_delete.append(await self.ctx.send('Limit has been updated.'))
@@ -115,7 +116,34 @@ class EditMenu(menus.Menu):
         pos = 'top' if top else 'bottom'
         await self.ctx.send(f'New channels are now created at the {pos}.', delete_after=3)
 
-    @menus.button(CATEGORY, position=menus.Position(4))
+    @menus.button(BITRATE, position=menus.Position(4))
+    async def on_bitrate(self, _):
+        """Changes the bitrate."""
+        msg = 'Please type the bitrate you want to set.'
+        to_delete = []
+        while True:
+            to_delete.append(await self.ctx.send(msg))
+            try:
+                message = await self.wait_for_message()
+            except asyncio.TimeoutError:
+                return
+            to_delete.append(message)
+            try:
+                number = int(message.content)
+            except ValueError:
+                msg = 'This is not a number. Try again.'
+            else:
+                limit = int(self.channel.guild.bitrate_limit)
+                if not 8000 <= number <= limit:
+                    msg = f'The bitrate must be between `8000` and `{limit}`. Try again'
+                else:
+                    await self.set_settings('bitrate', number)
+                    to_delete.append(await self.ctx.send('Bitrate has been updated.'))
+                    await asyncio.sleep(3)
+                    break
+        self.bot.loop.create_task(self.clean_up(to_delete))
+
+    @menus.button(CATEGORY, position=menus.Position(5))
     async def on_category(self, _):
         """Sets the category"""
         msg = 'Please type the name or id of the category you want to set.'
@@ -143,7 +171,7 @@ class EditMenu(menus.Menu):
             break
         self.bot.loop.create_task(self.clean_up(to_delete))
 
-    @menus.button(HELP, position=menus.Position(7))
+    @menus.button(HELP, position=menus.Position(6))
     async def on_help(self, _):
         """Shows you information"""
         if self.help:
@@ -174,6 +202,13 @@ class EditMenu(menus.Menu):
                       'Must be between `0` and `99`. Use `0` to remove the user limit.',
                 inline=False
             )
+            bitrate = settings.get('bitrate', 64000)
+            embed.add_field(
+                name=f'{BITRATE} Set the default bitrate ({(bitrate//1000)}kbps)',
+                value='Sets the default bitrate for created channels.\n'
+                      f'Must be between `8000` and `{int(self.channel.guild.bitrate_limit)}`.',
+                inline=False
+            )
             pos = 'top' if settings.get('top', False) else 'bottom'
             embed.add_field(
                 name=f'{POSITION} Change the position ({pos})',
@@ -197,7 +232,7 @@ class EditMenu(menus.Menu):
             await self.message.edit(embed=embed)
             self.help = True
 
-    @menus.button(EXIT, position=menus.Position(8))
+    @menus.button(EXIT, position=menus.Position(7))
     async def on_exit(self, _):
         """Exits the menu"""
         self.stop()
@@ -206,7 +241,7 @@ class EditMenu(menus.Menu):
 class Settings(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_guild_permissions(manage_channels=True)
+    @commands.bot_has_guild_permissions(manage_channels=True, move_members=True)
     async def setup(self, ctx):
         """Automatically creates a new category and a new channel."""
         category = await ctx.guild.create_category(ctx.bot.user.name)
@@ -281,6 +316,7 @@ class Settings(commands.Cog):
                 name = settings.get('name', '@user\'s channel')
                 limit = settings.get('limit', 10)
                 position = 'top' if settings.get('top', False) else 'bottom'
+                bitrate = settings.get('limit', 64000)//1000
                 try:
                     category = ctx.guild.get_channel(settings['category'])
                 except KeyError:
@@ -294,6 +330,7 @@ class Settings(commands.Cog):
                     value=f'Category: {category}\n'
                           f'Name: {name}\n'
                           f'Limit: `{limit}`\n'
+                          f'Bitrate: `{bitrate}`kbps\n'
                           f'Position: at the {position}',
                     inline=False
                 )
