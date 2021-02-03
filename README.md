@@ -34,25 +34,37 @@ To blacklist certain words in channel names you can use the **`dvc!blacklist <wo
 
 When creating a new channel you will get the **`manage channel`**, **`manage roles`** and **`move members`** permissions in this channel. Every member with these permissions can use commands to modify the channel.
 
-### Managing:
+### Settings:
+
+- **`dvc!prefix <new prefix>`** Changes the bot's prefix on the server
+- **`dvc!setup`** Creates a new category and voice channel and adds it
+- **`dvc!add <channel>`** Adds a channel
+- **`dvc!remove <channel>`** Removes a channel
+- **`dvc!edit <channel>`** Start an interactive session to edit a channel
+- **`dvc!list`** Lists all auto-channels and their settings
+- **`dvc!blacklist [word]`** Puts a word on the blacklist
+- **`dvc!whitelist <word>`** Removes a word from the blacklist
+
+### Managing voice channels:
 
 - **`dvc!name <new name>`** Sets a name
 - **`dvc!limit <new limit>`** Sets a limit
+- **`dvc!bitrate <new bitrate>`** Sets the bitrate
 - **`dvc!kick <member>`** Kicks someone
 
-### Permissions:
+#### Permissions:
 
 - **`dvc!permit <member>`** Gives someone permissions.
 - **`dvc!transfer <member>`** Transfers your permissions
 - **`dvc!claim`** Claims permissions after the owner has left the channel
 
-### Connecting:
+#### Connecting:
 
 - **`dvc!close [member|role]`** Denies connecting
 - **`dvc!open [member|role]`** Removes connection overwrites
 - **`dvc!grant [member|role]`** Allows connecting 
 
-### Visibility:
+#### Visibility:
 
 - **`dvc!hide [member|role]`** Makes your channel hidden
 - **`dvc!unhide [member|role]`** Makes your channel no longer hidden
@@ -63,6 +75,7 @@ When creating a new channel you will get the **`manage channel`**, **`manage rol
 - **`dvc!help [command]`** Help!
 - **`dvc!invite`** Get the invite
 - **`dvc!info`** Bot info
+- **`dvc!support <message>`** Contact the owner
 
 
 ## Links
