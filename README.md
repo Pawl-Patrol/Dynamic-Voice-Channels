@@ -32,7 +32,7 @@ To blacklist certain words in channel names you can use the **`dvc!blacklist <wo
 
 ## Commands:
 
-When creating a new channel you will get the **`manage channel`**, **`manage roles`** and **`move members`** permissions in this channel. Every member with these permissions can use commands to modify the channel.
+When creating a new channel you will get the **`manage channel`** and **`move members`** permissions in this channel. Every member with **`manage channel`** permission can use commands to modify the channel.
 
 ### Settings:
 
