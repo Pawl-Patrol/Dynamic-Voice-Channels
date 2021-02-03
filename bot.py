@@ -9,20 +9,30 @@ import datetime
 from contextlib import suppress
 import traceback
 import re
+import os
 
 
 extensions = (
     "cogs.settings",
     "cogs.core",
     "cogs.voice",
-    "cogs.api",
+    "cogs.admin",
 )
+
+
+intents = discord.Intents.none()
+intents.guilds = True
+intents.members = True
+intents.voice_states = True
+intents.presences = True
+intents.guild_messages = True
+intents.guild_reactions = True
 
 
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
-            intents=discord.Intents.all(),
+            intents=intents,
             command_prefix=lambda b, m: b.prefixes.get(str(m.guild.id), 'dvc!'),
             help_command=HelpCommand(),
             case_insensitive=True,
@@ -32,13 +42,16 @@ class Bot(commands.Bot):
         self.launched_at = None
         self.client_id = config.client_id
 
+        if not os.path.exists('data'):
+            os.mkdir('data')
+
         self.prefixes = JSONDict('data/prefixes.json')  # Mapping[guild_id, prefix]
         self.bad_words = JSONDict('data/bad_words.json')  # Mapping[guild_id, List[str]]
         self.configs = JSONDict('data/configs.json')  # Mapping[channel_id, config]
         self.channels = JSONList('data/channels.json')  # List[channel_id]
-        self.blacklist = JSONList('data/blacklist.json')  # List[user_id]
+        self.blacklist = JSONList('data/blacklist.json')  # List[user_id|guild_id]
 
-        self.voice_spam_control = commands.CooldownMapping.from_cooldown(3, 5, commands.BucketType.user)
+        self.voice_spam_control = commands.CooldownMapping.from_cooldown(2, 10, commands.BucketType.user)
         self.voice_spam_counter = Counter()
 
         self.text_spam_control = commands.CooldownMapping.from_cooldown(8, 10, commands.BucketType.user)
@@ -141,20 +154,13 @@ class Bot(commands.Bot):
                     name = re.sub(word, '*'*len(word), name, flags=re.IGNORECASE)
             if len(name) > 100:
                 name = name[:97] + '...'
-            overwrites = {
-                member.guild.me: discord.PermissionOverwrite(
-                    view_channel=True,
-                    connect=True,
+            if perms.manage_roles:
+                overwrites = {member: discord.PermissionOverwrite(
                     manage_channels=True,
-                    move_members=True,
-                    manage_permissions=True
-                ),
-                member: discord.PermissionOverwrite(
-                    manage_channels=True,
-                    move_members=True,
-                    manage_permissions=True
-                )
-            }
+                    move_members=True
+                )}
+            else:
+                overwrites = None
             new_channel = await member.guild.create_voice_channel(
                 overwrites=overwrites,
                 name=name,
@@ -187,22 +193,60 @@ class Bot(commands.Bot):
                 return
             await self.configs.save()
 
+    async def on_guild_remove(self, guild):
+        try:
+            self.prefixes.pop(str(guild.id))
+        except KeyError:
+            pass
+        else:
+            await self.prefixes.save()
+        try:
+            self.bad_words.pop(str(guild.id))
+        except KeyError:
+            pass
+        else:
+            await self.bad_words.save()
+        channel_dump = False
+        config_dump = False
+        for channel in guild.voice_channels:
+            if channel.id in self.channels:
+                self.channels.remove(channel.id)
+                channel_dump = True
+            if str(channel.id) in self.configs:
+                try:
+                    self.configs.pop(str(channel.id))
+                except KeyError:
+                    continue
+                config_dump = True
+        if channel_dump:
+            await self.channels.save()
+        if config_dump:
+            await self.configs.save()
+
+    async def on_guild_join(self, guild):
+        if guild.id in self.blacklist:
+            await guild.leave()
+
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             return
-        elif isinstance(error, commands.CommandInvokeError) and not isinstance(error.original, menus.MenuError):
-            error = error.original
-            traceback.print_exception(error.__class__.__name__, error, error.__traceback__)
-            owner = self.get_user(self.owner_id)
-            if owner is not None:
-                tb = '\n'.join(traceback.format_exception(error.__class__.__name__, error, error.__traceback__))
-                with suppress(discord.HTTPException):
-                    await owner.send(embed=discord.Embed(
-                        description=f'```py\n{tb}```',
-                        color=discord.Color.red()
-                    ))
         else:
-            await ctx.safe_send(msg=str(error), color=discord.Color.red())
+            ctx.command.reset_cooldown(ctx)
+            if isinstance(error, commands.CommandInvokeError) and not isinstance(error.original, menus.MenuError):
+                error = error.original
+                traceback.print_exception(error.__class__.__name__, error, error.__traceback__)
+                owner = self.get_user(self.owner_id)
+                if owner is not None:
+                    tb = '\n'.join(traceback.format_exception(error.__class__.__name__, error, error.__traceback__))
+                    with suppress(discord.HTTPException):
+                        await owner.send(embed=discord.Embed(
+                            description=f'```py\n{tb}```',
+                            color=discord.Color.red()
+                        ))
+            else:
+                if isinstance(error, commands.CommandInvokeError):
+                    error = error.original
+                await ctx.safe_send(msg=str(error).capitalize(), color=discord.Color.red())
 
 
 if __name__ == "__main__":

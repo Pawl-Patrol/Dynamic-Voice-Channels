@@ -241,7 +241,7 @@ class EditMenu(menus.Menu):
 class Settings(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    @commands.bot_has_guild_permissions(manage_channels=True, move_members=True)
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True, move_members=True)
     async def setup(self, ctx):
         """Automatically creates a new category and a new channel."""
         category = await ctx.guild.create_category(ctx.bot.user.name)
@@ -255,6 +255,7 @@ class Settings(commands.Cog):
 
     @commands.command(aliases=['channel'])
     @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True, move_members=True)
     async def add(self, ctx, *, channel: discord.VoiceChannel):
         """Adds a voice channel to the auto-channels."""
         if str(channel.id) in ctx.bot.configs:

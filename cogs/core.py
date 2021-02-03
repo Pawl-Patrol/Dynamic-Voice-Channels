@@ -2,20 +2,33 @@ import discord
 from discord.ext import commands
 import psutil
 import datetime
+from utils.converters import StrRange
+
+
+async def fetch_owner(bot):
+    if bot.owner_id:
+        owner = bot.get_user(bot.owner_id)
+        if owner is not None:
+            return owner
+    app = await bot.application_info()
+    bot.owner_id = app.owner.id
+    return app.owner
 
 
 class Core(commands.Cog):
     @commands.command(aliases=['join'])
     async def invite(self, ctx):
-        """Gives you the bot's Invite Link.
+        """Gives you the bot's invite link.
         If you don't want the bot to create its own role or you want to set the permissions yourself,
-        use the Invite without permissions. But don't forget that it won't work without these permissions.
+        use the invite without permissions. But don't forget that it won't work without these permissions.
         """
         best_perms = discord.utils.oauth_url(ctx.bot.client_id, discord.Permissions(
-            send_messages=True,
             read_messages=True,
+            read_message_history=True,
+            send_messages=True,
             embed_links=True,
             add_reactions=True,
+            external_emojis=True,
             move_members=True,
             manage_channels=True,
             manage_messages=True,
@@ -39,8 +52,7 @@ class Core(commands.Cog):
         """Shows you information about the bot."""
         embed = discord.Embed(color=ctx.guild.me.color)
         embed.set_thumbnail(url=ctx.bot.user.avatar_url)
-        app = await ctx.bot.application_info()
-        owner = app.owner
+        owner = await fetch_owner(ctx.bot)
         embed.set_author(name=f'Owner: {owner}', icon_url=owner.avatar_url)
         proc = psutil.Process()
         with proc.oneshot():
@@ -56,6 +68,21 @@ class Core(commands.Cog):
         embed.add_field(name='CPU usage', value=f'{round(cpu_usage)}%')
         embed.add_field(name='Memory usage', value=f'{int(mem_usage)} / {int(mem_total)} MiB ({round(mem_of_total)}%)')
         await ctx.send(embed=embed)
+
+    @commands.command(aliases=['suggest'])
+    @commands.cooldown(1, 120, commands.BucketType.member)
+    async def support(self, ctx, *, message: StrRange(0, 2000)):
+        """Sends a message to the bots owner. Do not abuse."""
+        owner = await fetch_owner(ctx.bot)
+        if owner:
+            embed = discord.Embed(
+                description=message
+            )
+            embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+            await owner.send(embed=embed)
+            await ctx.safe_send('Message has been sent. Thank you!', discord.Color.green())
+        else:
+            await ctx.safe_send('The owner could not be determined.', discord.Color.red())
 
 
 def setup(bot):
