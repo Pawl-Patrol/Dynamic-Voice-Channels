@@ -154,7 +154,7 @@ class Bot(commands.Bot):
                     name = re.sub(word, '*'*len(word), name, flags=re.IGNORECASE)
             if len(name) > 100:
                 name = name[:97] + '...'
-            if perms.manage_roles:
+            if perms.administrator:
                 overwrites = {member: discord.PermissionOverwrite(
                     manage_channels=True,
                     move_members=True
