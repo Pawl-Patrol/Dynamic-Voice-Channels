@@ -4,6 +4,30 @@
 
 Have you always wanted a fast discord bot that automatically creates new voice channels and is also easy to use?  Then this bot is perfect for you. It automatically creates a new voice channel as soon as you join a certain channel and deletes it afterwards.
 
+## Installation
+
+**Python 3.8 or higher is required**
+
+1. Install `discord.py` which can be found [here](https://github.com/Rapptz/discord.py):
+```
+pip install discord.py
+```
+2. Install `discord.ext.menus` which can be found [here](https://github.com/Rapptz/discord-ext-menus)
+```
+pip install -U git+https://github.com/Rapptz/discord-ext-menus
+```
+3. Install `psutil`:
+```
+pip install psutil
+```
+4. Prepare `config.py`:
+  - rename `config.example.py` to `config.py`
+  - replace at least the `token` variable
+5. Open a command line in your bot's directory and run:
+```
+python ./bot.py
+```
+
 ## Examples
 
 - **Dynamic channels:**
