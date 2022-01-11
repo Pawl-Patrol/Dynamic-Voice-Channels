@@ -1,3 +1,22 @@
+## IMPORTANT: A NEW VERSION OF DVC IS PLANNED
+Due to Discord making message content unavailable, prefix commands are no longer supported on May 1, 2022. \
+https://support-dev.discord.com/hc/en-us/articles/4404772028055-Message-Content-Access-Deprecation-for-Verified-Bots \
+This means for the future of this bot:
+- The bot needs to move to slash commands
+- Menus can no longer be used
+- Commands will get a bit more complicated
+***
+While rewriting the whole bot, I will implement some requested features as seen in the changelog.
+If you don't like these changes, me too! The bot can still be self-hosted in its original form as long as your bot isn't verified yet and/or has content privileges.
+### Changelog
+- All commands get migrated to slash commands
+- Documentation will be added
+- New feature: random strings in channel names
+- New feature: default permissions for channels
+- Additional command for checking for missing permissions due to a lot of missing permission errors
+- Removal of all editing commands due to abuse and replacement by default permissions
+- Minor improvements and QoL changes
+### Feel free to submit new features! :)
 # Dynamic Voice Channels
 
 ## Introduction
