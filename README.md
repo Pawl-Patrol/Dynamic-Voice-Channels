@@ -8,24 +8,19 @@ Have you always wanted a fast discord bot that automatically creates new voice c
 
 **Python 3.8 or higher is required**
 
-1. Install `discord.py` which can be found [here](https://github.com/Rapptz/discord.py):
+1. Install `disnake` which can be found [here](https://github.com/Rapptz/discord.py):
 ```
-pip install discord.py
+pip install disnake
 ```
-2. Install `discord.ext.menus` which can be found [here](https://github.com/Rapptz/discord-ext-menus)
-```
-pip install -U git+https://github.com/Rapptz/discord-ext-menus
-```
-3. Install `psutil`:
+2. Install `psutil`:
 ```
 pip install psutil
 ```
-4. Prepare `config.py`:
-  - rename `config.example.py` to `config.py`
-  - replace at least the `token` variable
+3. Prepare `config.py`:
+  - replace the `TOKEN` string in start-bot.py with your bot's token
 5. Open a command line in your bot's directory and run:
 ```
-python ./bot.py
+python ./start-bot.py
 ```
 
 ## Examples
