@@ -23,9 +23,8 @@ intents = discord.Intents(
 class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
-            test_guilds=[590976073555116081],
             intents=intents,
-            activity=discord.Game("migrating to slash commands"),
+            activity=discord.Game("/dvc"),
             allowed_mentions=discord.AllowedMentions.none()
         )
 
