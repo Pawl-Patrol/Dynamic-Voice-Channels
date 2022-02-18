@@ -24,7 +24,7 @@ class Bot(commands.Bot):
     def __init__(self):
         super().__init__(
             intents=intents,
-            activity=discord.Game("/dvc"),
+            activity=discord.Game("click me and invite me again for slash commands"),
             allowed_mentions=discord.AllowedMentions.none()
         )
 
@@ -169,6 +169,14 @@ class Bot(commands.Bot):
         if len(name) > 100:
             name = name[:97] + '...'
 
+        overwrites = channel.overwrites
+        overwrites[member] = discord.PermissionOverwrite(
+            manage_channels=True,
+            view_channel=True,
+            connect=True,
+            speak=True
+        )
+
         new_channel = await member.guild.create_voice_channel(
             name=name,
             category=category,
@@ -177,7 +185,7 @@ class Bot(commands.Bot):
             user_limit=settings["limit"],
             rtc_region=channel.rtc_region,
             video_quality_mode=channel.video_quality_mode,
-            overwrites=channel.overwrites
+            overwrites=overwrites
         )
 
         await member.move_to(new_channel)
