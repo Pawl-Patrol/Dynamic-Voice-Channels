@@ -1,4 +1,11 @@
+# The bot is no longer maintained and hosted. Please consider hosting it yourself. See below
+
 # Dynamic Voice Channels
+
+## Maintenance
+When discord.py got discontinued in 2022, I rewrote the bot using disnake.
+Then discord.py got continued again, which means another rewrite would be required to stay up to date with the ecosystem.
+This will probably happen in the future. Host the bot yourself as long as it still works.
 
 ## Introduction
 
